@@ -599,3 +599,72 @@ Pyramid: 70% unit (JUnit + MockK) -> 20% integration (Robolectric + MockWebServe
 - [ ] Tests: Robolectric integration tests in CI?
 - [ ] CI/CD: GitHub Actions signs APK automatically?
 - [ ] Deployment: Signing secrets in GitHub, not in code?
+
+---
+## Legal & Compliance (GDPR, CCPA, COL, Google Play)
+
+### Applicable Regulations
+
+- **GDPR (EU)**: Photos/videos are personal data. Processing is 100% local, risk is LOW but not zero.
+- **CCPA/CPRA (California)**: Must declare no data sale. Right to know and delete.
+- **COPPA (US)**: App NOT directed at children under 13. Include age clause in privacy policy.
+- **Ley 1581/2012 (Colombia)**: Explicit consent required. Privacy policy in Spanish. Contact mechanism for ARCO rights.
+
+### Google Play Policy Requirements
+
+- Permissions must be strictly necessary: READ_MEDIA_IMAGES + READ_MEDIA_VIDEO only.
+- Incremental permission requests with explanation on onboarding.
+- Privacy policy must be in Play Store listing and accessible from Settings > About.
+- Data Safety Form must be completed before publishing.
+- No MANAGE_EXTERNAL_STORAGE (would be rejected).
+
+### Consent Flow (Onboarding)
+
+```
+[Onboarding Screen]
+- "Access to photos and videos" [GRANT] [SKIP] (mandatory for app function)
+- "Access to audio" (optional) [GRANT] [SKIP]
+- "Access to documents" (optional) [GRANT] [SKIP]
+- [START CLEANUP] button (enabled only when mandatory permissions granted)
+```
+
+Consent text:
+> "By granting access to your photos and videos, you authorize Clean Gallery Deck to read these files on your device to display them in the deck and allow you to decide whether to keep or delete them. Your files are never uploaded to external servers or shared with third parties. You can revoke this permission at any time from your device settings."
+
+### Privacy Policy (content placed in app + Play Store)
+
+Sections: Information collected (none transmitted), How we use it, Data sharing (none), Security (EncryptedSharedPreferences), Your rights (ARCO/CCPA/GDPR), Children (not under 13), Changes, Contact.
+
+### Legal Risks & Mitigation
+
+| Risk | Probability | Impact | Mitigation |
+|------|-------------|--------|------------|
+| User claims app uploaded photos | Low | High | Open source code, privacy policy states local processing |
+| SIC sanctions (Colombia) | Medium | High | Comply with Ley 1581: consent, privacy policy, contact |
+| Google Play rejection | Medium | High | Correct Data Safety Form, minimal permissions |
+| GDPR fine | Low | Very High | No data transfer outside device |
+| CCPA lawsuit | Low | High | Declare no data sale, include right to delete |
+
+### Recommendations
+
+- Open source code on GitHub for transparency.
+- First-launch dialog: "Your photos never leave your device."
+- Log consent timestamp in SharedPreferences.
+- Update privacy policy with every feature change.
+- "Google-free mode" (already planned as option).
+- "Delete all my data" button in Settings.
+
+### Compliance Checklist
+
+- [ ] Privacy policy on Google Play listing
+- [ ] Privacy policy accessible from Settings > About
+- [ ] Data Safety Form completed in Play Console
+- [ ] Runtime permission requests with explanation
+- [ ] Minimal permissions (READ_MEDIA_IMAGES/VIDEO only)
+- [ ] No data sharing with third parties (declared)
+- [ ] Local processing verified in architecture
+- [ ] Contact email for ARCO rights
+- [ ] Age clause (not for under 13)
+- [ ] EncryptedSharedPreferences for tokens
+- [ ] Zero logs in production (ProGuard)
+- [ ] Privacy-by-design documented
