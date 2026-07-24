@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.deck.clean.ui.theme.CleanGalleryDeckTheme
+import com.deck.feature.deck.ui.DeckScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
