@@ -42,9 +42,9 @@ android {
 dependencies {
     implementation(project(":feature:deck"))
     implementation(platform(libs.compose.bom))
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation(libs.compose.ui)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.ui.tooling.preview)
     implementation(libs.activity.compose)
     implementation(libs.androidx.lifecycle.runtime)
     implementation(libs.androidx.lifecycle.viewmodel)
@@ -53,5 +53,5 @@ dependencies {
     kapt(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
     implementation(libs.coil.compose)
-    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation(libs.compose.ui.tooling)
 }

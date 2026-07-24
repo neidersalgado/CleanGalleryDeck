@@ -13,6 +13,6 @@ fun DeckScreen() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Text("CleanGalleryDeck")
+        Text(text = "Deck Screen")
     }
 }
