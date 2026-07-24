@@ -1,6 +1,6 @@
 # CleanGalleryDeck — Project Snapshot
 
-> Generated: 2026-07-24
+> Generated: 2026-07-24 (Updated)
 > Purpose: Pass this to any AI agent (DeepSeek, Claude, OpenCode, etc.) for full context.
 
 ---
@@ -17,7 +17,7 @@
 
 ### Current State
 
-Currently a **Kotlin/JVM** scaffold project. Planned migration to **Android with Jetpack Compose**.
+**Android multi-module project** with Clean Architecture, Jetpack Compose, Hilt, Coil. CI/CD with GitHub Actions. Compiles and builds successfully.
 
 ---
 
@@ -28,38 +28,72 @@ CleanGalleryDeck/
 ├── .ai/
 │   ├── context.md              # AI agent context (stack, conventions, author)
 │   ├── branching-strategy.md   # GitHub Flow + security policies
-│   └── snapshot.md             # THIS FILE — full project snapshot
+│   ├── 01-planning.ai          # Product vision, sprints, risks
+│   ├── 02-technical.ai         # Architecture, ADRs, models, APIs
+│   └── snapshot.md             # THIS FILE
 ├── .github/
-│   ├── workflows/ci.yml        # CI: lint (ktlint) + test + build
+│   ├── workflows/ci.yml        # CI: lint + test + build (Android)
 │   ├── CODEOWNERS              # @neidersalgado owns all code
-│   └── dependabot.yml          # Weekly updates for Gradle + Actions
-├── .lefthook.yml               # Pre-push hooks: ktlintCheck + test
-├── build.gradle.kts            # Kotlin JVM 2.2.21 (TO BE REPLACED)
-├── settings.gradle.kts
+│   └── dependabot.yml          # Weekly updates
+├── .lefthook.yml               # Pre-push hooks: lint + test
+├── app/                        # Android Application module
+│   └── src/main/java/com/deck/clean/
+│       ├── CleanGalleryApplication.kt  (#HiltAndroidApp)
+│       ├── MainActivity.kt            (Compose + NavHost)
+│       └── ui/theme/Theme.kt          (Material 3 dynamic color)
+├── core/
+│   ├── common/                 # Shared utilities
+│   ├── domain/                 # UseCases, Models, Repository interfaces
+│   ├── data/                   # Repository implementations
+│   ├── analytics/              # Analytics abstraction
+│   └── notification/           # Notification abstraction
+├── feature/
+│   ├── deck/                   # DeckScreen (swipeable card UI)
+│   ├── settings/               # Settings screen
+│   └── player/                 # Media player
+├── media-sources/
+│   ├── media-source-api/       # MediaSource interface
+│   ├── source-local-images/    # Local image loader
+│   ├── source-local-videos/    # Local video loader
+│   └── source-google-photos/   # Google Photos integration
+├── build.gradle.kts            # Root (plugin declarations)
+├── settings.gradle.kts         # Multi-module includes
 ├── gradle.properties
-├── gradlew / gradlew.bat
-├── LICENSE                     # MIT
-└── src/main/kotlin/.../
-    └── Main.kt                 # Scaffold (fun main)
+└── gradle/libs.versions.toml   # Centralized version catalog
 ```
 
 ---
 
-## 3. ENVIRONMENT
+## 3. STACK
 
-### Local Machine
+| Component | Version | Location |
+|-----------|---------|----------|
+| Gradle | 8.10.2 | `gradle/wrapper/gradle-wrapper.properties` |
+| AGP | 8.7.3 | `libs.versions.toml` |
+| Kotlin | 2.1.0 | `libs.versions.toml` |
+| Compose BOM | 2024.12.01 | `libs.versions.toml` |
+| Dagger Hilt | 2.52 | `libs.versions.toml` |
+| Coil | 2.7.0 | `libs.versions.toml` |
+| Min SDK | 24 | `app/build.gradle.kts` |
+| Target SDK | 35 | `app/build.gradle.kts` |
+| Compile SDK | 35 | `app/build.gradle.kts` |
+| JDK | 21 (Temurin) | local |
+
+---
+
+## 4. ENVIRONMENT (Local Machine)
 
 | Tool | Version |
 |------|---------|
 | **OS** | macOS Darwin 25.0 (x86_64) |
 | **Shell** | /bin/zsh |
-| **Java** | Temurin-25.0.1+8 LTS |
-| **Gradle** | 9.0.0 (Kotlin 2.2.0) |
+| **Java** | Temurin-25.0.1+8 LTS (default), Temurin-21.0.11 (for Android) |
+| **Android SDK** | `~/Library/Android/sdk` (build-tools 36.0.0, platforms 35+36) |
 | **Git** | 2.51.0 |
 | **Lefthook** | 1.10.4 |
 | **gh CLI** | Authenticated as `neidersalgadoy` |
 
-### Git Configuration (Global)
+### Git Configuration
 
 | Setting | Value |
 |---------|-------|
@@ -70,113 +104,44 @@ CleanGalleryDeck/
 | `user.signingkey` | `~/.ssh/id_ed25519_neidersalgado_personal.pub` |
 | `commit.gpgsign` | true |
 
-### SSH Configuration
-
-Two GitHub identities via `~/.ssh/config`:
+### SSH Two Identities
 
 | Host Alias | Key | GitHub Account |
 |------------|-----|----------------|
 | `github.com` | `~/.ssh/id_ed25519` | neidersalgadoy (work) |
 | `github.com-neidersalgado` | `~/.ssh/id_ed25519_neidersalgado_personal` | neidersalgado (personal) |
 
-Remote URL: `git@github.com-neidersalgado:neidersalgado/CleanGalleryDeck.git`
+Remote: `git@github.com-neidersalgado:neidersalgado/CleanGalleryDeck.git`
 
 ---
 
-## 4. IMPLEMENTED SECURITY & QUALITY
+## 5. CURRENT BRANCH STATE
 
-| Layer | Mechanism | Status |
-|-------|-----------|--------|
-| **Branch protection** | Rulesets on `main` + `develop` | ✅ Active |
-| **Protected branches** | PR required, 1 approval, no force push | ✅ Active |
-| **Required status checks** | `lint`, `test` must pass before merge | ✅ Active |
-| **Signed commits** | SSH signing with personal key | ✅ Active |
-| **CODEOWNERS** | `.github/CODEOWNERS` → `@neidersalgado` | ✅ Active |
-| **Dependabot** | Weekly scans for Gradle + Actions | ✅ Active |
-| **Pre-push hooks** | Lefthook runs `ktlintCheck` + `test` | ✅ Active |
-| **CI pipeline** | GitHub Actions: lint → test → build | ✅ Active |
-| **AI context** | `.ai/` folder for any agent | ✅ Active |
+- **`main`**: Initial commits (branching strategy, CI setup, project scaffold)
+- **`develop`**: Android multi-module migration, CI green, local build passing
+- **CI**: GitHub Actions runs `lint` + `test` + `build` (all green)
+- **Local build**: `./gradlew assembleDebug` passes with JDK 21
 
 ---
 
-## 5. BRANCHING STRATEGY
-
-Model: **GitHub Flow**
-
-```
-main ────── merge (PR) ──────────────────
-  └── develop ── merge (PR) ──
-       ├── feature/*  → PR → develop
-       ├── fix/*      → PR → develop
-       └── release/*  → PR → main
-```
-
-Every push triggers:
-1. Lefthook (local): `ktlintCheck` + `test`
-2. GitHub Actions (remote): `lint` + `test` + `build`
-
----
-
-## 6. COMMITS (Git Log)
-
-```
-1d1f69c docs: add security section to branching strategy  [signed]
-ff4c13d chore: add branching strategy, CI, linting, and pre-push hooks [signed]
-df87fc7 chore: initial project setup with AI context              [unsigned]
-```
-
----
-
-## 7. PENDING / NEXT STEPS
-
-### Immediate
-- [ ] **Migrate from Kotlin/JVM to Android**
-  - Add Android plugins, `app/` module, Compose setup
-  - Build config for Hilt, Coil, Material3
-  - Package: `com.deck.clean`
-
-### Planned Architecture
-```
-app/ (Android Application)
-├── data/        ← Repositories, DataSources, DTOs
-├── domain/      ← UseCases, Models, Repository interfaces
-├── ui/          ← Compose screens, ViewModels, Navigation
-└── di/          ← Hilt modules
-```
-
----
-
-## 8. USEFUL COMMANDS
+## 6. COMMANDS
 
 ```bash
+# Build APK
+JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home ./gradlew assembleDebug
+
 # Lint
-./gradlew ktlintCheck
+JAVA_HOME=/.../temurin-21.jdk/Contents/Home ./gradlew lint
 
 # Test
-./gradlew test
+JAVA_HOME=/.../temurin-21.jdk/Contents/Home ./gradlew test
 
-# Build
-./gradlew build
-
-# Pre-push check (manual)
-./gradlew ktlintCheck test
+# Full build + test
+JAVA_HOME=/.../temurin-21.jdk/Contents/Home ./gradlew clean assembleDebug test
 
 # Git with signing
 git commit -S -m "message"
-git log --show-signature
 
-# SSH test
-ssh -T git@github.com-neidersalgado
+# Switch JDK
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home
 ```
-
----
-
-## 9. CONTACT
-
-- **GitHub**: https://github.com/neidersalgado
-- **Repo**: https://github.com/neidersalgado/CleanGalleryDeck
-- **Email**: hsneider.salgado@hotmail.com
-
----
-
-*End of Snapshot — Pass this file to any AI agent for full project context.*
