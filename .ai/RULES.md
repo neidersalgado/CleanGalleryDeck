@@ -44,3 +44,52 @@ When beginning a session, agent reads:
 - Data layer implements Domain interfaces via Hilt `@Binds`
 - ViewModels use StateFlow, never MutableState exposed publicly
 - Navigation via NavHost with string routes
+- ADRs in `.ai/adr/` override general rules when conflicting
+
+## Concurrency Rules
+
+- All coroutines launch in ViewModel scope (`viewModelScope`).
+- UseCases are `suspend fun` — no coroutine scope management in use cases.
+- Repository/DataSource functions are `suspend fun` — never expose `Job` or `Deferred`.
+- Dispatchers: IO for disk/network, Default for CPU, Main for UI.
+- Structured concurrency: use `coroutineScope` or `supervisorScope` — never `GlobalScope`.
+- Cancellation: all suspending calls respect cancellation (check `isActive` in loops).
+- Never launch coroutines from Repository or UseCase constructors.
+- Room/WorkManager already manage their own dispatchers — do not override.
+
+## Domain Model Evolution
+
+- Model entities as sealed classes or interfaces + implementations — NOT single class with boolean flags.
+- Prefer composition over type flags: `MediaItem` has `source: MediaSourceType`, not `isLocal: Boolean`.
+- New types extend the sealed hierarchy — existing code remains untouched.
+- Example: `Image`, `Video`, `CloudPhoto` as subtypes where behavior differs.
+
+## Observability Requirements
+
+- AnalyticsService interface in `:core:domain`. Implementations in `:core:analytics`.
+- CrashReporter interface in `:core:domain`. Implementations wrap Crashlytics.
+- PerformanceTracer in all UseCases: `startTrace("delete_media")` + success/failure metric.
+- No Firebase imports in domain or feature modules.
+- Timber/Napier for debug logging (stripped in release builds by ProGuard).
+- Never log URIs, file paths, or user-identifiable data — even in debug builds.
+
+## Performance Requirements
+
+- Gallery load < 2s for 1000 items: Paging 3 with `PagingSource` or LIMIT/OFFSET.
+- Deletion < 500ms per file: `Dispatchers.IO`, non-blocking.
+- Composables: `key()` in lists, `remember`/`derivedStateOf` for derived state.
+- Coil disk cache + memory cache (20% of available RAM).
+- Baseline Profiles: generate with Macrobenchmark before Play Store release.
+- JankStats or FrameMetrics for 60fps verification.
+
+## Definition of Done (DoD)
+
+A task is complete only when ALL apply:
+1. Code follows `RULES.md` golden rules and architecture rules.
+2. Unit tests pass with >80% coverage on domain logic.
+3. Integration tests (Robolectric) for data layer where applicable.
+4. No prohibited dependencies introduced (verify with dependency-analysis plugin).
+5. ADR created for any new architectural decision.
+6. `.ai/` files updated if context, rules, or planning changed.
+7. `assembleDebug` + `test` + `lint` pass locally.
+8. CI green on push (pre-push hooks verify).

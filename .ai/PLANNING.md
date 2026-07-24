@@ -668,3 +668,191 @@ Sections: Information collected (none transmitted), How we use it, Data sharing 
 - [ ] EncryptedSharedPreferences for tokens
 - [ ] Zero logs in production (ProGuard)
 - [ ] Privacy-by-design documented
+
+---
+---
+## Concurrency Strategy — Rules & Contracts
+
+### Threading Model
+
+| Dispatcher | Use Case | Example |
+|------------|----------|---------|
+| `Dispatchers.Main` | UI updates, StateFlow collection | `DeckScreen` recomposition |
+| `Dispatchers.IO` | Disk I/O, MediaStore queries, Room | `LocalImageMediaSource.queryItems()` |
+| `Dispatchers.Default` | CPU-bound work, filtering, sorting | `FilterGalleryUseCase` |
+
+### Contract for Repository Interfaces
+
+```kotlin
+interface MediaItemRepository {
+    // Guarantees: returns items sorted by dateTaken DESC
+    // Threading: suspends on IO, safe to call from Main
+    // Cancellation: respects Job cancellation
+    // Errors: returns Resource<T>, never throws
+    suspend fun getItems(filter: MediaFilter): Flow<Resource<List<MediaItem>>>
+
+    // Guarantees: item is moved to trash (not permanently deleted)
+    // Threading: IO
+    // Cancellation: respects cancellation
+    // Errors: returns Resource.Error if permission denied or item not found
+    suspend fun delete(item: MediaItem): Resource<Unit>
+
+    // Guarantees: item removed from trash, restored to original location
+    // Threading: IO
+    suspend fun restore(item: MediaItem): Resource<Unit>
+}
+```
+
+### Cancellation Policy
+
+- Every `suspend fun` must respect structured concurrency cancellation.
+- Long-running operations (gallery scan) use `currentCoroutineContext().ensureActive()` periodically.
+- ViewModel cancels all child coroutines when `onCleared()` is called.
+- WorkManager workers own their own `CoroutineScope` — cancellation handled by WorkManager.
+
+### Feature Flags
+
+```kotlin
+// :core/domain/src/main/java/com/deck/domain/config/FeatureFlag.kt
+enum class FeatureFlag(val key: String, val default: Boolean) {
+    GOOGLE_PHOTOS("google_photos", false),
+    STATISTICS("statistics", false),
+    FILTER_BY_ALBUM("filter_album", false),
+    EXPERIMENTAL_ANIMATIONS("experimental_anim", false),
+    BATCH_SELECT("batch_select", false),
+    SMART_SELECTION("smart_selection", false),
+    AI_GROUPING("ai_grouping", false),
+}
+```
+
+- Feature flags default to `false` — new features toggle on after validation.
+- Stored in DataStore (user-facing) or BuildConfig (compile-time).
+- UI reacts to flags via `StateFlow<Map<FeatureFlag, Boolean>>`.
+
+### Domain Model Evolution Rules
+
+**DO NOT** create a single `Media` class with boolean flags:
+
+```kotlin
+// ❌ ANTIPATTERN — God Entity
+data class Media(
+    val isVideo: Boolean,
+    val isRaw: Boolean,
+    val isCloud: Boolean,
+    val isHidden: Boolean,
+    val isFavorite: Boolean,
+    val isDuplicate: Boolean,
+    // ...
+)
+```
+
+**DO** use sealed hierarchies or composition:
+
+```kotlin
+// ✅ PREFERRED — Sealed hierarchy
+sealed class MediaItem {
+    abstract val id: String
+    abstract val uri: String
+    abstract val displayName: String
+    abstract val dateTaken: Long
+
+    data class Image(
+        override val id: String,
+        override val uri: String,
+        override val displayName: String,
+        override val dateTaken: Long,
+        val width: Int,
+        val height: Int,
+        val exif: Map<String, String> = emptyMap(),
+    ) : MediaItem()
+
+    data class Video(
+        override val id: String,
+        override val uri: String,
+        override val displayName: String,
+        override val dateTaken: Long,
+        val durationMs: Long,
+        val resolution: Pair<Int, Int>?,
+    ) : MediaItem()
+
+    data class Burst(
+        override val id: String,
+        override val uri: String,
+        override val displayName: String,
+        override val dateTaken: Long,
+        val frames: List<String>,
+    ) : MediaItem()
+}
+```
+
+### Performance Baseline
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| App startup (cold) | < 1.5s | Macrobenchmark |
+| Gallery load (1000 items) | < 2s | Android Profiler |
+| Deck swipe FPS | 60fps stable | GPU Profiler / JankStats |
+| Deletion latency | < 500ms | PerformanceTracer |
+| APK size (release) | < 8MB | `./gradlew assembleRelease` |
+| Memory (mid-range device) | < 256MB | LeakCanary + Profiler |
+
+---
+
+## Executive Review — Multidisciplinary Audit (v9.0)
+
+### Summary
+
+| Role | Score | Finding | Action |
+|------|-------|---------|--------|
+| CEO | 8.5/10 | MVP too ambitious (12 screens) | Reduce Sprint 1 to Deck + Local Delete only |
+| CTO | 9/10 | Circular dependency :core:data <-> :media-sources | Move MediaSource interface to :core:domain |
+| CFO | 10/10 | Zero infrastructure costs | Maintain strategy, document as competitive advantage |
+| SRE | 7/10 | Missing real-time performance metrics | Add Firebase Performance Tracing |
+| DevOps | 8/10 | CI missing Gradle cache and Fastlane | Optimize Actions with cache, add Fastlane |
+| Cybersecurity | 8.5/10 | Missing networkSecurityConfig and DependencyCheck | Add secure network config + vuln scan in CI |
+| System Design | 9.5/10 | No failure management in Registry | Add try/catch around isAvailable |
+| Staff Engineer | 9/10 | Missing E2E test for full flow | Add onboarding->deck->delete->undo test |
+| Tech Lead | 9/10 | No CONTRIBUTING.md in project | Already created in .ai/CONTRIBUTING.md |
+
+### 7 Critical Corrections
+
+**1. Scope Adjustment (CEO+CTO)**
+- MVP (Sprint 1-3): Onboarding + Deck + Local Delete (no Google, no filters, no stats)
+- V2 (Sprint 4-6): Google Photos + Filters + Stats + Trash
+
+**2. Module Dependency Fix (System Design)**
+- MediaSource interface moves to `:core:domain`
+- `:core:data` uses MediaSourceRegistry (injects Set<MediaSource>)
+- No direct dependency from `:core:data` to `:media-sources:*`
+
+**3. Observability (SRE)**
+- FirebasePerformance.startTrace("delete_media") in all UseCases
+- Trace includes success/failure metrics
+
+**4. CI/CD Optimization (DevOps)**
+- Gradle cache in GitHub Actions
+- dependencyCheckAnalyze in CI
+- Fastlane for Play Store deployment
+
+**5. Security Enhancement (Cybersecurity)**
+- res/xml/network_security_config.xml: block cleartext, allow only Google APIs
+- ProGuard obfuscation for tokens
+
+**6. Registry Failure Handling (Staff Engineer)**
+- try/catch around MediaSource.isAvailable()
+- Failed source doesnt block the entire deck
+
+**7. E2E Testing (Tech Lead)**
+- Full flow test: Onboarding -> Deck -> Delete -> Undo
+- ComposeTestRule with permission grants
+
+### Refined Sprint Plan
+
+| Sprint | Focus | Deliverables |
+|--------|-------|-------------|
+| Sprint 1 | Domain models + Security + Permissions | MediaItem, Resource, MediaSource interface, permissions |
+| Sprint 2 | Local Data Sources + Use Cases | LocalImageMediaSource, GetGalleryItems, DeleteMedia, KeepMedia |
+| Sprint 3 | Deck UI + ViewModel + Gestures | DeckScreen, DeckViewModel (MVI), swipe, undo snackbar |
+| Sprint 4 | Google Photos | OAuth, Picker API, GoogleMediaSource, LoadGooglePhotos |
+| Sprint 5 | Filtration + Trash | FilterGallery, Room, Trash screens |
+| Sprint 6 | Polish + Settings + Stats | DataStore, Stats, dark mode, Play Store release |

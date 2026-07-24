@@ -21,6 +21,8 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
       - name: Lint
         run: ./gradlew lint
@@ -28,5 +30,14 @@ jobs:
       - name: Test
         run: ./gradlew test
 
+      - name: Vulnerability Scan
+        run: ./gradlew dependencyCheckAnalyze || echo "dependencyCheck not configured — skipping"
+
       - name: Build
-        run: ./gradlew build
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/*.apk

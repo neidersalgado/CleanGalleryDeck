@@ -89,6 +89,132 @@ fun getVideoThumbnail(context: Context, uri: Uri): Bitmap? {
 4. `MediaSourceRegistry` receives `Set<MediaSource>` and filters by availability
 5. No changes needed in ViewModels or Use Cases
 
+## Baseline Profiles (Performance)
+
+Generate with Macrobenchmark module before Play Store release:
+
+```kotlin
+// :benchmarks/src/main/java/com/deck/benchmark/StartupBenchmark.kt
+@RunWith(AndroidJUnit4::class)
+class StartupBenchmark {
+    @get:Rule val benchmarkRule = MacrobenchmarkRule()
+
+    @Test
+    fun startup() = benchmarkRule.measureRepeated(
+        packageName = "com.deck.clean",
+        metrics = listOf(StartupTimingMetric()),
+        iterations = 10,
+        startupMode = StartupMode.COLD,
+    ) { pressHome() }
+}
+```
+
+Profile rules in `:app/src/main/baseline-prof-gte/com.deck.clean/baseline.prof`:
+```
+HSPLcom/deck/feature/deck/ui/DeckScreen;
+HSPLcom/deck/clean/MainActivity;
+HSPLandroidx/compose/foundation/lazy/LazyColumn;
+```
+
+## Paging 3 Integration
+
+```kotlin
+// In GetGalleryItemsUseCase or repository
+class GalleryPagingSource(
+    private val localSource: LocalImageMediaSource,
+    private val context: Context,
+) : PagingSource<Int, MediaItem>() {
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, MediaItem> {
+        return try {
+            val page = params.key ?: 0
+            val items = localSource.queryItems(context, page, params.loadSize)
+            LoadResult.Page(
+                data = items,
+                prevKey = if (page > 0) page - 1 else null,
+                nextKey = if (items.size == params.loadSize) page + 1 else null,
+            )
+        } catch (e: Exception) {
+            LoadResult.Error(e)
+        }
+    }
+}
+```
+
+ViewModel collects with `Flow<PagingData<MediaItem>>`:
+```kotlin
+val items: StateFlow<PagingData<MediaItem>> = Pager(PagingConfig(pageSize = 50)) {
+    GalleryPagingSource(source, context)
+}.flow.cachedIn(viewModelScope).stateIn(viewModelScope)
+```
+
+## Feature Flags Pattern
+
+```kotlin
+interface FeatureFlagProvider {
+    fun isEnabled(flag: FeatureFlag): Flow<Boolean>
+}
+
+class DataStoreFeatureFlagProvider @Inject constructor(
+    private val dataStore: DataStore<Preferences>,
+) : FeatureFlagProvider {
+    override fun isEnabled(flag: FeatureFlag): Flow<Boolean> {
+        return dataStore.data.map { it[boolPreferencesKey(flag.key)] ?: flag.default }
+    }
+}
+```
+
+Usage in UI:
+```kotlin
+@Composable
+fun DeckScreen(state: DeckState, flags: Map<FeatureFlag, Boolean>) {
+    if (flags[FeatureFlag.EXPERIMENTAL_ANIMATIONS] == true) {
+        // New animation path
+    } else {
+        // Stable animation path
+    }
+}
+```
+
+## Observability Contracts (Domain Interfaces)
+
+```kotlin
+// :core/domain/src/main/java/com/deck/domain/observability/AnalyticsService.kt
+interface AnalyticsService {
+    fun trackEvent(name: String, properties: Map<String, String> = emptyMap())
+}
+
+interface CrashReporter {
+    fun log(throwable: Throwable, message: String? = null)
+}
+
+interface PerformanceTracer {
+    fun startTrace(name: String): Trace
+    interface Trace {
+        fun putMetric(name: String, value: Long)
+        fun stop()
+    }
+}
+```
+
+Implementation in Use Cases:
+```kotlin
+class DeleteMediaUseCase @Inject constructor(
+    private val repository: MediaItemRepository,
+    private val tracer: PerformanceTracer,
+    private val analytics: AnalyticsService,
+) {
+    suspend operator fun invoke(item: MediaItem): Resource<Unit> {
+        val trace = tracer.startTrace("delete_media")
+        return try {
+            val result = repository.delete(item)
+            trace.putMetric("success", if (result is Resource.Success) 1 else 0)
+            analytics.trackEvent("media_deleted", mapOf("source" to item.sourceType.name))
+            result
+        } finally { trace.stop() }
+    }
+}
+```
+
 ## AEP Reference
 
 The AI Engineering Platform (AEP) at `~/aep/` provides:

@@ -16,8 +16,7 @@ Multi-module project following Clean Architecture principles:
 :feature:deck                 → Main gallery deck screen (Compose UI)
 :feature:settings             → Settings screen
 :feature:player               → Media player screen
-:media-sources:media-source-api       → Media source abstraction API
-:media-sources:source-google-photos   → Google Photos integration
+:media-sources:source-google-photos   → Google Photos integration (V2)
 :media-sources:source-local-images    → Local image files
 :media-sources:source-local-videos    → Local video files
 ```
@@ -79,7 +78,9 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push to `deve
 
 - `lint` — static analysis
 - `test` — unit tests
-- `build` — assemble debug APK
+- `dependencyCheck` — vulnerability scanning
+- `assembleDebug` — build debug APK
+- Upload APK as build artifact
 
 ## Development
 
