@@ -1,33 +1,12 @@
 plugins {
-    kotlin("jvm") version "2.2.21"
-    id("org.jlleitschuh.gradle.ktlint") version "12.2.0"
+    id("com.android.application") version "8.5.0" apply false
+    id("com.android.library") version "8.5.0" apply false
+    id("org.jetbrains.kotlin.android") version "2.0.20" apply false
+    id("com.google.dagger.hilt.android") version "2.51.1" apply false
+    id("org.jetbrains.kotlin.kapt") version "2.0.20" apply false
+    id("org.jetbrains.kotlin.plugin.compose") version "2.0.20" apply false
 }
 
-group = "io.github.neidersalgado"
-version = "1.0-SNAPSHOT"
-
-repositories {
-    mavenCentral()
-}
-
-kotlin {
-    jvmToolchain(21)
-}
-
-dependencies {
-    testImplementation(kotlin("test"))
-}
-
-tasks.test {
-    useJUnitPlatform()
-}
-
-ktlint {
-    verbose.set(true)
-    outputToConsole.set(true)
-    coloredOutput.set(true)
-}
-
-tasks.register("prepush") {
-    dependsOn(tasks.ktlintCheck, tasks.test)
+tasks.register("clean", Delete::class) {
+    delete(rootProject.layout.buildDirectory)
 }

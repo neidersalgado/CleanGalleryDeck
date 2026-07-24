@@ -2,7 +2,7 @@ pre-push:
   parallel: true
   commands:
     lint:
-      run: ./gradlew ktlintCheck
+      run: ./gradlew lint
       skip:
         - merge
         - rebase
