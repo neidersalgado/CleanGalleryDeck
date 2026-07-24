@@ -1,33 +1,58 @@
 # CleanGalleryDeck
 
-Clean architecture Android app for gallery/deck media management.
+Android app for reviewing and cleaning media galleries via a Tinder-style swipeable deck.
 
-## Stack
+## Tech Stack
 
-- **Language:** Kotlin 2.1.0
-- **UI:** Jetpack Compose (Material 3) BOM 2024.12.01
-- **Architecture:** Clean Architecture + MVVM
-- **DI:** Dagger Hilt 2.52
-- **Images:** Coil 2.7.0
-- **Gradle:** 8.10.2 | **AGP:** 8.7.3
-- **Min SDK:** API 24 | **Target:** API 35
+| Component | Version |
+|-----------|---------|
+| Kotlin | 2.1.0 |
+| AGP | 8.13.2 |
+| Gradle | 8.13 |
+| Compose BOM | 2024.12.01 |
+| Hilt | 2.52 |
+| Coil | 2.7.0 |
+| Min/Target SDK | 24/35 |
+| Java | 17 |
+
+All dependencies in `gradle/libs.versions.toml`.
 
 ## Modules
 
-- `:app` - Application entry point
-- `:core:*` - Common, Domain, Data, Analytics, Notification
-- `:feature:*` - Deck, Settings, Player
-- `:media-sources:*` - Extensible media source system (API, Local Images, Local Videos, Google Photos)
+| Module | Type | Layer |
+|--------|------|-------|
+| `:app` | application | Entry point, Hilt, NavHost |
+| `:core:common` | library | Shared utilities |
+| `:core:domain` | library | Entities, VOs, Repo interfaces, Use Cases |
+| `:core:data` | library | Repo implementations, DataSources, DI |
+| `:core:analytics` | library | Analytics events |
+| `:core:notification` | library | Notifications |
+| `:feature:deck` | library | DeckScreen, ViewModel |
+| `:feature:settings` | library | Settings screen |
+| `:feature:player` | library | Media player |
+| `:media-sources:media-source-api` | library | MediaSource abstraction |
+| `:media-sources:source-google-photos` | library | Google Photos integration |
+| `:media-sources:source-local-images` | library | Local image files |
+| `:media-sources:source-local-videos` | library | Local video files |
+
+## Build
+
+```bash
+./gradlew assembleDebug   # Build debug APK
+./gradlew test            # Run unit tests
+./gradlew lint            # Static analysis
+./gradlew build           # Full build + test + lint
+```
 
 ## Branching
 
-See [branching-strategy.md](branching-strategy.md)
+GitHub Flow: `feature/*` -> PR -> `develop` -> PR -> `main`.
+Pre-push hook (Lefthook) runs `test` + `lint`.
 
-## CI/CD
+## CI
 
-- **Local hook:** Lefthook runs lint + test on pre-push
-- **Remote CI:** GitHub Actions (lint, test, build)
+GitHub Actions: `lint` -> `test` -> `build` on every push to `develop`/`main`.
 
 ## Author
 
-Neider Salgado - @neidersalgado
+Neider Salgado — @neidersalgado
