@@ -28,6 +28,6 @@ android {
 
 dependencies {
     implementation(platform(libs.compose.bom))
-    implementation("androidx.compose.ui")
-    implementation("androidx.compose.material3")
+    implementation(libs.compose.ui)
+    implementation(libs.compose.material3)
 }
