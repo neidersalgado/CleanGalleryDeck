@@ -1,12 +1,11 @@
 [versions]
-agp = "8.13.2"
+agp = "8.7.3"
 kotlin = "2.1.0"
 coreKtx = "1.15.0"
 composeBom = "2024.12.01"
 hilt = "2.52"
 lifecycle = "2.8.7"
 coil = "2.7.0"
-coroutines = "1.9.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -19,11 +18,6 @@ compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = 
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
-compose-ui = { group = "androidx.compose.ui", name = "ui" }
-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
-kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
