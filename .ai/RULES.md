@@ -15,10 +15,11 @@ Golden rules, agent orchestration, and coding conventions.
 ## Agent Initialization Order
 
 When beginning a session, agent reads:
-1. `RULES.md` (this file) — golden rules
-2. `CONTEXT.md` — project overview, stack, build commands
-3. `PLANNING.md` — roadmap, sprint status, ADRs
-4. `KNOWLEDGE.md` — technical reference (Scoped Storage, Google APIs, permissions)
+1. `RULES.md` (this file) — golden rules, handoff lifecycle
+2. `CONTEXT.md` — project overview, stack, build commands, ADRs
+3. `STANDARDS.md` — production-grade coding standards (Kotlin, Compose, MVI, accessibility)
+4. `PLANNING.md` — roadmap, sprint status, ADRs, feature flags, concurrency
+5. `KNOWLEDGE.md` — technical reference (Scoped Storage, Google APIs, permissions, patterns)
 
 ## Agent Priorities
 
@@ -30,12 +31,17 @@ When beginning a session, agent reads:
 
 ## Coding Conventions
 
-- Kotlin: follow official style guide
-- Naming: classes PascalCase, functions/methods camelCase, constants SCREAMING_SNAKE_CASE
-- Compose: state hoisting, single source of truth, unidirectional data flow
+See `.ai/STANDARDS.md` for the full production-grade coding standards with correct/incorrect examples.
+
+Key highlights:
+- Kotlin: no `!!`, prefer `val` + `data class`, sealed classes for state/events
+- Compose: state hoisting, `@Immutable` state, `collectAsStateWithLifecycle()`
 - DI: constructor injection via Hilt, never field injection in ViewModels
 - Tests: JUnit 5 + MockK for unit, Robolectric for integration, ComposeTestRule for UI
 - Use Cases: single `operator fun invoke()` per class
+- Naming: classes PascalCase, functions camelCase, constants SCREAMING_SNAKE_CASE
+- Accessibility: contentDescription mandatory, touch targets >= 48dp
+- Performance: key in LazyColumn, derivedStateOf, remember lambdas
 
 ## Architecture Rules
 
