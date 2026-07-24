@@ -83,6 +83,30 @@ Before opening a PR:
 - [ ] Commits follow conventional format
 - [ ] No debug/console leftovers in production code
 
+## Security
+
+| Layer | Mechanism |
+|-------|-----------|
+| **Branch protection** | PR required, 1 approval, status checks, no force push |
+| **CODEOWNERS** | `@neidersalgado` owns all code |
+| **Dependabot** | Weekly dependency updates (Gradle + Actions) |
+| **Signed commits** | SSH signing with personal key |
+| **Pre-push hooks** | ktlintCheck + test (Lefthook) |
+| **CI/CD** | GitHub Actions (lint + test + build) |
+
+### Branch Protection Setup (GitHub Web)
+
+1. Go to `Settings → Branches → Add rule`
+2. Pattern: `main`
+3. Enable:
+   - ✅ Require a pull request before merging
+   - ✅ Require approvals (1)
+   - ✅ Dismiss stale reviews
+   - ✅ Require status checks (lint, test)
+   - ✅ Do not allow bypassing
+   - ✅ Block force pushes
+4. Repeat for `develop`
+
 ## Tools
 
 | Tool | Purpose |
@@ -91,3 +115,5 @@ Before opening a PR:
 | **JUnit 5** | Test framework |
 | **Lefthook** | Local git hooks manager |
 | **GitHub Actions** | Remote CI pipeline |
+| **Dependabot** | Automated dependency updates |
+| **SSH signing** | Commit/tag verification |

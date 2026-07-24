@@ -1,0 +1,15 @@
+# Global owners
+* @neidersalgado
+
+# AI context and branching docs
+.ai/ @neidersalgado
+
+# CI/CD configuration
+.github/ @neidersalgado
+
+# Build configuration
+build.gradle.kts @neidersalgado
+settings.gradle.kts @neidersalgado
+
+# Source code
+src/ @neidersalgado
