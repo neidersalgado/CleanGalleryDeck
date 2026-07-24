@@ -82,6 +82,18 @@ When beginning a session, agent reads:
 - Baseline Profiles: generate with Macrobenchmark before Play Store release.
 - JankStats or FrameMetrics for 60fps verification.
 
+## Handoff Lifecycle
+
+Agents receive work via handoff documents in `.ai/handoffs/`. Rules:
+
+1. **Start**: Read the handoff. Check section 8 (Validation). If any item is unchecked, resolve before starting.
+2. **Execute**: Set status to IN_PROGRESS. Work scope is strictly what section 3 defines.
+3. **Forbidden scope**: If a handoff says "do not touch X", touching X is a violation.
+4. **Completion**: When all acceptance criteria (section 3.3) are met, set status to COMPLETED. If blocked, set CANCELLED and create a new handoff describing the blocker.
+5. **Index**: After status change, update `.ai/handoffs/INDEX.md`.
+6. **Snapshot**: On COMPLETED, create or update `.ai/snapshots/latest-snapshot.md`.
+7. **Limit**: An agent should work on exactly one IN_PROGRESS handoff at a time.
+
 ## Definition of Done (DoD)
 
 A task is complete only when ALL apply:

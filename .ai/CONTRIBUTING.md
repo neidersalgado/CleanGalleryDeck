@@ -36,6 +36,35 @@ This folder is the **Project Adapter** — the bridge between the project and AI
 2. Include: git log, file tree, build status, current sprint
 3. Update `latest-snapshot.md` symlink or copy
 
+## Handoff Protocol
+
+### Lifecycle
+
+```
+PENDING → IN_PROGRESS → COMPLETED
+                   ↘ CANCELLED
+```
+
+Each handoff has exactly one origin and one destination. Only the destination may set IN_PROGRESS. Only the origin (or Tech Lead) may set CANCELLED.
+
+### Rules
+
+1. **One deliverable per handoff** — a handoff covers exactly one atomic deliverable (e.g. "domain models", not "domain + data + UI").
+2. **Versioned** — `HANDOFF-NNN.md` where NNN auto-increments. No overwrites.
+3. **Controlled** — status transitions are explicit. No skipping states.
+4. **Limited scope** — acceptance criteria must be achievable in ≤1 sprint.
+5. **Validation gate** — section 8 must be checked before the destination starts working.
+6. **Supersession** — if a handoff becomes obsolete, create a new one with `Supersedes: HANDOFF-NNN` in the header.
+7. **Snapshots** — create a new snapshot when a handoff transitions to COMPLETED.
+
+### Template
+
+Copy `.ai/handoffs/TEMPLATE.md` to `.ai/handoffs/HANDOFF-NNN-description.md`.
+
+### Index
+
+Handoffs are listed in `.ai/handoffs/INDEX.md` with current status. When a handoff completes, update the index.
+
 ## Future Expansion (AEP)
 
 When ready to expand to the full AI Engineering Platform, use this structure:
