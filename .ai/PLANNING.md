@@ -513,3 +513,89 @@ fun PermissionAwareContent(
 - [ ] **State Hoisting** (GAP 9): Stateless UI, state + events as params
 - [ ] **Reactive Permissions** (GAP 10): Handle revocations from Settings
 - [ ] **TDD**: RED (test) -> GREEN (code) -> REFACTOR
+
+---
+## NFR + Deployment (Non-Functional Requirements & DevOps)
+
+### 1. Performance
+
+| Metric | SLO | Tool | Strategy |
+|--------|-----|------|----------|
+| Initial load | < 2s for 1000 files | Android Profiler | Paginate Pager (50 items), Coil disk cache |
+| Deletion time | < 500ms per file | System.currentTimeMillis() | Dispatchers.IO, non-blocking UI |
+| RAM | < 256MB mid-range | LeakCanary | Coil MemoryCache at 20% RAM, recycle onStop |
+| FPS | 60 stable during swipe | GPU Profiler | remember, derivedStateOf, key in lists |
+| ANR | 0 in production | Crashlytics | WorkManager for long tasks, no disk/network on Main |
+
+### 2. Security
+
+- Tokens: EncryptedSharedPreferences + MasterKey.AES256_GCM
+- Network: HTTPS only (Google APIs). No custom servers.
+- Zero logs: ProGuard strips Log.d/Timber in release. CrashlyticsTree sanitizes.
+- Minimum permissions: READ_MEDIA_IMAGES + READ_MEDIA_VIDEO (API 33+). NEVER MANAGE_EXTERNAL_STORAGE.
+
+### 3. Scalability
+
+- 50k files supported: Room indexes on date_taken + media_type
+- Paging: LIMIT + OFFSET with PagingSource
+- New media types: @IntoSet + MediaSource, no core changes
+
+### 4. Reliability
+
+- Crash rate: < 1% (Firebase Crashlytics)
+- Deletion success: > 99%. Fallback: SAF if MediaStore.delete fails on API 30+
+
+### 5. Usability & Accessibility
+
+- Touch targets: min 48dp, action buttons 56dp
+- Contrast: Material 3 meets WCAG 2.1 AA (ratio > 4.5:1)
+- TalkBack: Modifier.semantics on all images and buttons
+
+### 6. Testing Strategy
+
+Pyramid: 70% unit (JUnit + MockK) -> 20% integration (Robolectric + MockWebServer) -> 10% E2E (ComposeTestRule)
+
+| Level | Tool | Coverage Target | Run |
+|-------|------|----------------|-----|
+| Unit (Domain) | JUnit 5 + MockK | 100% Use Cases & Models | Every PR |
+| Integration (Data) | Robolectric + MockWebServer | 85% DataSources & Repos | Every PR |
+| UI (Compose) | ComposeTestRule | 70% critical flows | Every PR (headless) |
+| Performance | Baseline Profiles + Macrobenchmark | Launch & scroll < 2s | Before release |
+
+### 7. CI/CD Pipeline (GitHub Actions)
+
+| Phase | Command | Tool |
+|-------|---------|------|
+| 1. Lint | ./gradlew lint | Android Lint |
+| 2. Test | ./gradlew testDebugUnitTest | JUnit, Robolectric |
+| 3. Build | ./gradlew assembleDebug | Gradle |
+
+### 8. Signing & Distribution
+
+- Release keys: NEVER in repo. Use GitHub secrets (SIGNING_KEY_ALIAS, SIGNING_KEY_PASSWORD, SIGNING_STORE_PASSWORD).
+- Channels: Internal Testing (per PR) -> Closed Alpha (per Sprint) -> Open Beta -> Production
+
+### 9. Build Variants
+
+| Variant | Purpose | Config |
+|---------|---------|--------|
+| debug | Daily dev | Logs on, minify off, .debug suffix |
+| release | Play Store | Logs off, minify on, ProGuard |
+
+### 10. Observability (Production)
+
+| Tool | Metric | Alert |
+|------|--------|-------|
+| Crashlytics | Crash rate > 1% | Slack notification |
+| Analytics | Delete Success vs Fail | Alert if fails > 2% |
+| Performance | Gallery load > 3s | Optimize MediaStore query |
+| Play Console | ANR rate > 0.5% | Review Dispatchers + WorkManager |
+
+### NFR Checklist
+
+- [ ] Performance: Pager paginated? Coil with cache?
+- [ ] Security: EncryptedSharedPreferences? Logs stripped in release?
+- [ ] Scalability: @IntoSet for MediaSource?
+- [ ] Tests: Robolectric integration tests in CI?
+- [ ] CI/CD: GitHub Actions signs APK automatically?
+- [ ] Deployment: Signing secrets in GitHub, not in code?
