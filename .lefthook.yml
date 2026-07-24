@@ -1,0 +1,13 @@
+pre-push:
+  parallel: true
+  commands:
+    lint:
+      run: ./gradlew ktlintCheck
+      skip:
+        - merge
+        - rebase
+    test:
+      run: ./gradlew test
+      skip:
+        - merge
+        - rebase
